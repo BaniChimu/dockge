@@ -1,0 +1,34 @@
+# A gitlab CI for multiarch docker images using docker buildx
+
+stages:
+  - lint
+  - build
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+  DATE_TAG: $CI_REGISTRY_IMAGE:latest-$(date +"%Y%m%d")
+
+lint:
+  stage: lint
+  image: node:stable
+  before_script:
+    - npm install -g pnpm
+  script:
+    - pnpm install
+    - pnpm run lint
+    - pnpm run check-ts
+
+build:
+  stage: build
+  image: docker:stable
+  only:
+    - master
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  services:
+    - docker:dind
+  script:
+    - docker buildx create --use
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker buildx build --push --platform linux/amd64,linux/arm64 -t $IMAGE_TAG .
+    - docker buildx build --push --platform linux/amd64,linux/arm64 -t $DATE_TAG .
