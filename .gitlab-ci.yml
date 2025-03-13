@@ -10,7 +10,7 @@ variables:
 
 lint:
   stage: lint
-  image: node:stable
+  image: node:22
   before_script:
     - npm install -g pnpm
   script:
